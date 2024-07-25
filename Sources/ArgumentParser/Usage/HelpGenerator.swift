@@ -178,10 +178,29 @@ internal struct HelpGenerator {
         let groupedArgs = [arg] + args[..<groupEnd]
         args = args[groupEnd...]
 
-        synopsis = groupedArgs
+        let synopses = groupedArgs
           .lazy
           .map { $0.synopsisForHelp }
-          .joined(separator: "/")
+
+        // TODO: (numist) this mess becomes less of a mess by tracking inversion along with isComposite
+        if synopses.count == 2, #available(macOS 13.0, *) {
+          if synopses[1] == "--no-\(groupedArgs[1].help.keys[0])" || synopses[1] == "[--no-\(groupedArgs[1].help.keys[0])]" {
+            synopsis = synopses[0].replacing(
+              "--\(groupedArgs[0].help.keys[0])",
+              with: "--[no-]\(groupedArgs[1].help.keys[0])"
+            )
+          } else if synopses[1] == "--disable-\(groupedArgs[1].help.keys[0])" || synopses[1] == "[--disable-\(groupedArgs[1].help.keys[0])]" {
+            synopsis = synopses[0].replacing(
+              "--enable-\(groupedArgs[0].help.keys[0])",
+              with: "--{en,dis}able-\(groupedArgs[1].help.keys[0])"
+            )
+          } else {
+            synopsis = synopses.joined(separator: "/")
+          }
+        } else {
+          synopsis = synopses.joined(separator: "/")
+        }
+
         abstract = groupedArgs
           .lazy
           .map { $0.help.abstract }

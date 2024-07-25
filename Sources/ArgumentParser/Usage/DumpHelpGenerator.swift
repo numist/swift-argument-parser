@@ -55,7 +55,7 @@ fileprivate extension BidirectionalCollection where Element == ParsableCommand.T
 }
 
 fileprivate extension ArgumentSet {
-  func mergingCompositeArguments() -> ArgumentSet {
+  func mergingCompositeArguments() -> ArgumentSet { // TODO: (numist) oh hey this is handy
     var arguments = ArgumentSet()
     var slice = self[...]
     while var argument = slice.popFirst() {

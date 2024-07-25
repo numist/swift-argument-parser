@@ -232,25 +232,7 @@ extension HelpGenerationTests {
     var behaviour: OutputBehaviour
   }
 
-  struct F: ParsableCommand {
-    enum OutputBehaviour: String, EnumerableFlag {
-      case stats, count, list
-
-      static func name(for value: OutputBehaviour) -> NameSpecification {
-        .short
-      }
-    }
-
-    @Flag(help: "Change the program output")
-    var behaviour: OutputBehaviour = .list
-  }
-
-  struct G: ParsableCommand {
-    @Flag(inversion: .prefixedNo, help: "Whether to flag")
-    var flag: Bool = false
-  }
-
-  func testHelpWithMutuallyExclusiveFlags() {
+  func testHelpWithMutuallyExclusiveFlagsE() {
     AssertHelp(.default, for: E.self, equals: """
                USAGE: e --stats --count --list
 
@@ -260,7 +242,22 @@ extension HelpGenerationTests {
                  -h, --help              Show help information.
 
                """)
+	}
 
+	struct F: ParsableCommand {
+		enum OutputBehaviour: String, EnumerableFlag {
+			case stats, count, list
+
+			static func name(for value: OutputBehaviour) -> NameSpecification {
+				.short
+			}
+		}
+
+		@Flag(help: "Change the program output")
+		var behaviour: OutputBehaviour = .list
+	}
+
+	func testHelpWithMutuallyExclusiveFlagsF() {
     AssertHelp(.default, for: F.self, equals: """
                USAGE: f [-s] [-c] [-l]
 
@@ -269,12 +266,67 @@ extension HelpGenerationTests {
                  -h, --help              Show help information.
 
                """)
+	}
 
+	enum HasBeta: EnumerableFlag {
+		case no
+		case yes
+
+		static func help(for value: Self) -> ArgumentHelp? {
+			return "maybe?"
+		}
+	}
+
+	enum HasData: EnumerableFlag {
+		case maybeData
+		case noData
+		case data
+
+		static func help(for value: Self) -> ArgumentHelp? {
+			return nil
+		}
+	}
+
+	struct G: ParsableCommand {
+		@Option()
+		var apth: String?
+
+		@Flag(help: "Beta??")
+		var beta: HasBeta = .yes
+
+		@Flag(help: "Whether you've got any data")
+		var data: [HasData] = [.noData]
+
+		@Flag(name: [.long, .short], inversion: .prefixedNo, help: "Whether to flag")
+		var flag: Bool = false
+
+		@Flag(name: [.long, .short], inversion: .prefixedEnableDisable, exclusivity: .exclusive)
+		var galf: Bool = true
+
+		@Option()
+		var path: String?
+	}
+
+	/* BUGS?:
+		 * usage does not indicate that HasData can be specified multiple times
+	   * nothing in indicates Beta flags are related to each other
+
+	 the string below is a bit optimistic (coming up with shortenings like --[maybe-,no-]data is a non-trivial diffing problem!)
+	 but gets the goal across
+	 */
+
+	func testHelpWithMutuallyExclusiveFlagsG() {
     AssertHelp(.default, for: G.self, equals: """
-               USAGE: g [--flag] [--no-flag]
+               USAGE: g [--apth <apth>] [--no|--yes] [--[maybe-,no-]data ...] [--[no-]flag] [--{en,dis}able-galf] [--path <path>]
 
                OPTIONS:
-                 --flag/--no-flag        Whether to flag (default: --no-flag)
+                 --apth <apth>
+                 --no                    maybe?
+                 --yes                   maybe? (default: --yes)
+                 --[maybe-,no-]data      Whether you've got any data
+                 -f, --[no-]flag         Whether to flag (default: --no-flag)
+                 -g, --{en,dis}able-galf (default: --enable-galf)
+                 --path <path>
                  -h, --help              Show help information.
 
                """)
